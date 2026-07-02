@@ -45,6 +45,41 @@ Resolves via [`kotoba-lang/occupation`](https://github.com/kotoba-lang/occupatio
 See [`docs/business-model.md`](docs/business-model.md) and
 [`docs/operator-guide.md`](docs/operator-guide.md).
 
+## Reference implementation
+
+`src/pharmacy_practice/{store,governor}.cljc` is a minimal but real
+implementation of the Core Contract above (pure cljc, no external deps).
+Distinct from the ISCO-08 3213 pharmacy-technician actor
+(`cloud-itonami-isco-3213`'s `pharmacy-support.*`, allergy-conflict
+gated): a pharmacist owns final clinical verification and dispensing
+authority, so this actor is gated on a different, cross-record
+invariant.
+
+- `pharmacy-practice.store` — `Store` protocol + `MemStore`: registered
+  patients, prescriber verifications, dispenses. A verification/dispense
+  can only be recorded against a registered patient (patient
+  provenance).
+- `pharmacy-practice.governor` — `PharmacyPracticeGovernor`: `assess`
+  gates a proposal against the patient env. Hard invariants force
+  `:hold` (no patient, direct-write instead of `:propose`, or — the
+  distinguishing invariant — a dispense with **no prior verified
+  prescriber-verification record for that drug**, checked across the
+  patient's verification history, unconditionally); a
+  `:controlled-substance?` dispense always requires `:high`+
+  safety-class and thus `:human-approval` — it can never be
+  auto-approved; low-confidence proposals also escalate.
+
+```bash
+clojure -M:test   # 8 tests, 14 assertions, green
+```
+
+This is what backs this repo's `:maturity :implemented` entry in
+[`kotoba-lang/occupation`](https://github.com/kotoba-lang/occupation) —
+the 21st `cloud-itonami-isco-*` occupation to reach that tier, after
+`cloud-itonami-isco-6112`, `-2221`, `-7126`, `-4321`, `-9312`, `-5322`,
+`-8332`, `-1321`, `-3253`, `-6210`, `-5223`, `-7231`, `-8121`, `-9111`,
+`-2512`, `-1120`, `-4110`, `-3213`, `-5153` and `-7411` (ADR-2607012000).
+
 ## License
 
 AGPL-3.0-or-later.
