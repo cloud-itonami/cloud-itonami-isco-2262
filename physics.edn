@@ -1,0 +1,34 @@
+;; What this vertical's robot physically does, declared for
+;; kotoba.robotics.process (kotoba-lang/robotics). `kbb -M:physics` runs it.
+;;
+;; README "Robotics premise": a dispensing robot performs pill counting,
+;; packaging and labeling under pharmacist supervision (ISCO 2262). The
+;; physical work: moving filled vials from the counter to the capping station
+;; at dispensing speed, and keeping refrigerated vaccine vials inside their
+;; storage range while they are out of the fridge.
+;;
+;; Every number without a cited source is marked `estimate` in its :basis.
+;; Replacing an estimate with a sourced value is this bot's growth work.
+{:physics/schema "itonami.physical-ai.spec.v1"
+ :repo "cloud-itonami/cloud-itonami-isco-2262"
+ :cases
+ [{:id :vial-to-capper
+   :kind :manipulator
+   :procedure "vertical two-link arm moves a filled pill vial from the counting cell to the capping station; the move is squeezed for throughput"
+   :params {:l1-m 0.25 :l2-m 0.20 :m1-kg 1.5 :m2-kg 1.0 :payload-kg 0.15
+            :from [0.35 0.05] :to [0.05 0.35] :steps 600}
+   :sweep {:param :duration-s :values [0.15 0.2 0.3 0.5 1.0]}
+   :quantity :peak-tau1-nm
+   :limit {:max 12.0 :basis "estimate: continuous torque of the small geared servo assumed at the first joint"}
+   :boundary {:lo 0.1 :hi 1.5}}
+  {:id :vaccine-vial-out-of-fridge
+   :kind :thermal
+   :procedure "refrigerated vaccine vial held in room air at 25 C while the robot labels it: time until it passes 8 C"
+   :params {:conductivity-w-mk 0.6 :density-kg-m3 1000.0 :specific-heat-j-kgk 4000.0
+            :t0-c 5.0 :t-hot-c 25.0 :h-front-w-m2k 10.0
+            :t-back-ambient-c 25.0 :h-back-w-m2k 10.0
+            :threshold-c 8.0 :duration-s 3600.0 :nodes 11}
+   :sweep {:param :thickness-m :values [0.005 0.008 0.012 0.02 0.03]}
+   :quantity :time-to-threshold-s
+   :limit {:min 300.0 :basis "estimate: five minutes out of the fridge for labeling; 8 C is the upper edge of the 2-8 C vaccine storage range"}
+   :boundary {:lo 0.004 :hi 0.04}}]}
